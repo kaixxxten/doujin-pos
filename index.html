@@ -2182,7 +2182,7 @@ loadData();
 
         // ========== 資料持久化 ==========
         function saveData() {
-            localStorage.setItem('pos_products', JSON.stringify(products));
+            localStorage.setItem('pos_products', JSON.stringify((Array.isArray(products)?products:[]).map(normalizeProduct)));
             localStorage.setItem('pos_transactions', JSON.stringify(transactions));
         }
 
@@ -2192,6 +2192,10 @@ loadData();
             
             if (savedProducts) {
                 products = JSON.parse(savedProducts);
+                // 兼容舊版欄位命名：確保銷售頁可以用 category/type/image 等欄位正常渲染
+                products = (Array.isArray(products) ? products : []).map(normalizeProduct);
+                // 補齊 id（避免後續編輯/刪除/渲染出錯）
+                products.forEach(p => { if (!p.id) p.id = (crypto?.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2)); });
             }
             if (savedTransactions) {
                 transactions = JSON.parse(savedTransactions);
@@ -2962,6 +2966,5 @@ function clearAllData() {
             renderProductsTable();
         }
 </script>
-<script src="auto_fix.js"></script>
 </body>
 </html>
