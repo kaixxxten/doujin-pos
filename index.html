@@ -1347,6 +1347,34 @@
   pointer-events: none;
 }
 
+
+.product-price{white-space:nowrap !important; word-break:keep-all !important;}
+.product-stock{white-space:nowrap !important;}
+
+
+        /* ===== 商品管理篩選列 ===== */
+        .manage-filters{ margin: 0 0 1rem 0; background:#fff; border-radius:16px; padding:0.75rem 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+        .manage-filters .filter-row{ display:flex; gap:0.6rem; align-items:center; flex-wrap:wrap; }
+        .filter-select{ padding:0.55rem 0.8rem; border:2px solid rgba(99,102,241,0.35); border-radius:12px; font-size:0.95rem; background:#fff; min-width: 180px; }
+        .filter-reset{ padding:0.55rem 0.9rem; border:none; border-radius:12px; font-size:0.95rem; background:#f1f5f9; color:#334155; cursor:pointer; }
+        .filter-reset:hover{ background:#e2e8f0; }
+        .manage-filters .filter-hint{ margin-top:0.55rem; font-size:0.86rem; color:#64748b; }
+        @media (max-width: 600px){
+            .filter-select{ min-width: 140px; flex: 1 1 140px; }
+            .filter-reset{ flex: 0 0 auto; }
+        }
+
+        /* ===== 分類/類型拖曳排序 ===== */
+        .ct-item{ display:flex; justify-content:space-between; align-items:center; gap:0.6rem; padding:0.55rem 0; border-bottom:1px solid #eee; }
+        .ct-left{ display:flex; align-items:center; gap:0.6rem; min-width: 0; }
+        .ct-handle{ cursor:grab; user-select:none; font-size:1.2rem; color:#94a3b8; padding:0.2rem 0.35rem; border-radius:8px; }
+        .ct-handle:active{ cursor:grabbing; }
+        .ct-label{ word-break:break-word; min-width:0; }
+        .ct-item.dragging{ opacity:0.55; }
+        .ct-item.drag-over{ background: rgba(99,102,241,0.08); }
+        .ct-move{ display:flex; gap:0.4rem; }
+        .btn-move{ background:#f1f5f9; border:none; border-radius:10px; padding:0.35rem 0.5rem; cursor:pointer; color:#334155; }
+        .btn-move:hover{ background:#e2e8f0; }
 </style>
 </head>
 <body>
@@ -1437,8 +1465,18 @@
             <div class="manage-header">
                 <h2>商品管理</h2>
                 <button class="btn-add" onclick="openProductModal()">➕ 新增商品</button>
+            
+            </div>
+            <div class="manage-filters">
+                <div class="filter-row">
+                    <select id="manageFilterCategory" class="filter-select" onchange="onManageFilterChange()"></select>
+                    <select id="manageFilterType" class="filter-select" onchange="onManageFilterChange()"></select>
+                    <button class="filter-reset" onclick="resetManageFilters()">清除篩選</button>
+                </div>
+                <div class="filter-hint">提示：可用分類/類型快速縮小清單，方便大量商品管理。</div>
             </div>
             <div class="products-table">
+
                 <table>
                     <thead>
                         <tr>
@@ -1890,28 +1928,134 @@
             const typeList = document.getElementById('typeList');
             if (!catList || !typeList) return;
 
-            catList.innerHTML = categoryOptions.map(v => `
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem; padding:0.5rem 0; border-bottom:1px solid #eee;">
-                    <div style="word-break:break-word;">${escapeHtml(v)}</div>
-                    <div style="display:flex; gap:0.5rem;">
-                        <button class="action-btn btn-edit" onclick="renameCategory('${escapeJs(v)}')">改名</button>
-                        <button class="action-btn btn-delete" onclick="deleteCategory('${escapeJs(v)}')">刪除</button>
+            catList.innerHTML = categoryOptions.map((c, idx) => `
+                <div class="ct-item" draggable="true" data-kind="category" data-value="${c}">
+                    <div class="ct-left">
+                        <span class="ct-handle" title="拖曳排序">≡</span>
+                        <span class="ct-label">${c}</span>
+                    </div>
+                    <div class="ct-move">
+                        <button class="btn-move" title="上移" onclick="moveCategory('${c}', -1)">↑</button>
+                        <button class="btn-move" title="下移" onclick="moveCategory('${c}', 1)">↓</button>
+                        <div class="category-actions">
+                            <button class="btn-rename" onclick="renameCategory('${c}')">改名</button>
+                            <button class="btn-delete" onclick="deleteCategory('${c}')">刪除</button>
+                        </div>
                     </div>
                 </div>
             `).join('');
 
-            typeList.innerHTML = typeOptions.map(v => `
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem; padding:0.5rem 0; border-bottom:1px solid #eee;">
-                    <div style="word-break:break-word;">${escapeHtml(v)}</div>
-                    <div style="display:flex; gap:0.5rem;">
-                        <button class="action-btn btn-edit" onclick="renameType('${escapeJs(v)}')">改名</button>
-                        <button class="action-btn btn-delete" onclick="deleteType('${escapeJs(v)}')">刪除</button>
+            typeList.innerHTML = typeOptions.map((t, idx) => `
+                <div class="ct-item" draggable="true" data-kind="type" data-value="${t}">
+                    <div class="ct-left">
+                        <span class="ct-handle" title="拖曳排序">≡</span>
+                        <span class="ct-label">${t}</span>
+                    </div>
+                    <div class="ct-move">
+                        <button class="btn-move" title="上移" onclick="moveType('${t}', -1)">↑</button>
+                        <button class="btn-move" title="下移" onclick="moveType('${t}', 1)">↓</button>
+                        <div class="category-actions">
+                            <button class="btn-rename" onclick="renameType('${t}')">改名</button>
+                            <button class="btn-delete" onclick="deleteType('${t}')">刪除</button>
+                        </div>
                     </div>
                 </div>
             `).join('');
+
+            initSortableList(catList, 'category');
+            initSortableList(typeList, 'type');
+
+            refreshCategoryTypeSelects();
+
+            // 同步更新首頁篩選與商品管理篩選
+            renderFilters();
+            renderManageFilters();
         }
 
-        function addCategory() {
+                // ===== 分類/類型：拖曳排序 + 上下移 =====
+        function moveCategory(name, delta) {
+            const i = categoryOptions.indexOf(name);
+            if (i === -1) return;
+            const j = i + delta;
+            if (j < 0 || j >= categoryOptions.length) return;
+            const tmp = categoryOptions[i];
+            categoryOptions[i] = categoryOptions[j];
+            categoryOptions[j] = tmp;
+            saveCategoryTypeOptions();
+            renderCategoryTypeManager();
+        }
+
+        function moveType(name, delta) {
+            const i = typeOptions.indexOf(name);
+            if (i === -1) return;
+            const j = i + delta;
+            if (j < 0 || j >= typeOptions.length) return;
+            const tmp = typeOptions[i];
+            typeOptions[i] = typeOptions[j];
+            typeOptions[j] = tmp;
+            saveCategoryTypeOptions();
+            renderCategoryTypeManager();
+        }
+
+        function initSortableList(container, kind) {
+            if (!container) return;
+
+            // 每次重繪後，先移除舊的事件再綁一次（用 cloneNode 方式避免重複綁定）
+            const newNode = container.cloneNode(true);
+            container.parentNode.replaceChild(newNode, container);
+            container = newNode;
+
+            let dragEl = null;
+
+            container.addEventListener('dragstart', (e) => {
+                const item = e.target.closest('.ct-item');
+                if (!item) return;
+                dragEl = item;
+                item.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', item.dataset.value || '');
+                e.dataTransfer.setData('kind', kind);
+            });
+
+            container.addEventListener('dragend', (e) => {
+                const item = e.target.closest('.ct-item');
+                if (item) item.classList.remove('dragging');
+                [...container.querySelectorAll('.ct-item')].forEach(el => el.classList.remove('drag-over'));
+                dragEl = null;
+            });
+
+            container.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                const over = e.target.closest('.ct-item');
+                if (!over || over === dragEl) return;
+                [...container.querySelectorAll('.ct-item')].forEach(el => el.classList.remove('drag-over'));
+                over.classList.add('drag-over');
+            });
+
+            container.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const over = e.target.closest('.ct-item');
+                if (!over || !dragEl) return;
+
+                const fromValue = dragEl.dataset.value;
+                const toValue = over.dataset.value;
+                if (!fromValue || !toValue || fromValue === toValue) return;
+
+                const arr = (kind === 'category') ? categoryOptions : typeOptions;
+                const fromIndex = arr.indexOf(fromValue);
+                const toIndex = arr.indexOf(toValue);
+                if (fromIndex === -1 || toIndex === -1) return;
+
+                // 重新排序
+                arr.splice(fromIndex, 1);
+                arr.splice(toIndex, 0, fromValue);
+
+                saveCategoryTypeOptions();
+                renderCategoryTypeManager();
+            });
+        }
+
+function addCategory() {
             const input = document.getElementById('newCategoryInput');
             const v = (input.value || '').trim();
             if (!v) return;
@@ -2088,6 +2232,15 @@ loadData();
                 if (btns[idx]) btns[idx].classList.add('active');
             }
 
+            if (pageName === 'manage') {
+                renderManageFilters();
+                renderProductsTable();
+            }
+
+            if (pageName === 'settings') {
+                renderCategoryTypeManager();
+            }
+
             if (pageName === 'report') {
                 renderReport();
             }
@@ -2211,13 +2364,26 @@ if (productId) {
 
         function renderProductsTable() {
             const tbody = document.getElementById('productsTableBody');
-            
+
+            // 依「商品管理」篩選（不影響首頁篩選）
+            const mf = (window.manageFilters || { category: 'all', type: 'all' });
+            const list = products.filter(p => {
+                const catOk = (mf.category === 'all') || (p.category === mf.category);
+                const typeOk = (mf.type === 'all') || (p.type === mf.type);
+                return catOk && typeOk;
+            });
+
             if (products.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 2rem; color: #999;">尚無商品，請點擊「新增商品」按鈕</td></tr>';
                 return;
             }
-            
-            tbody.innerHTML = products.map(product => `
+
+            if (list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 2rem; color: #999;">目前篩選條件沒有符合的商品</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = list.map(product => `
                 <tr>
                     <td><img src="${product.image}" class="product-thumb"></td>
                     <td>${product.name}</td>
@@ -2240,6 +2406,9 @@ if (productId) {
             category: 'all',
             type: 'all'
         };
+
+        // 商品管理頁面專用篩選（與首頁篩選分開）
+        window.manageFilters = { category: 'all', type: 'all' };
 
         // 右上角搜尋（名稱包含）
         let navSearchTerm = '';
@@ -2274,7 +2443,48 @@ if (productId) {
             `).join('');
         }
 
-        function setFilter(filterType, value) {
+                // ===== 商品管理頁面：分類/類型篩選 =====
+        function renderManageFilters() {
+            const selCat = document.getElementById('manageFilterCategory');
+            const selType = document.getElementById('manageFilterType');
+            if (!selCat || !selType) return;
+
+            // 先記住目前值（避免重繪跳回）
+            const curCat = (window.manageFilters && window.manageFilters.category) ? window.manageFilters.category : 'all';
+            const curType = (window.manageFilters && window.manageFilters.type) ? window.manageFilters.type : 'all';
+
+            const catList = ['all', ...categoryOptions];
+            const typeList = ['all', ...typeOptions];
+
+            selCat.innerHTML = catList.map(v => {
+                const label = (v === 'all') ? '全部分類' : v;
+                return `<option value="${v}" ${v === curCat ? 'selected' : ''}>${label}</option>`;
+            }).join('');
+
+            selType.innerHTML = typeList.map(v => {
+                const label = (v === 'all') ? '全部類型' : v;
+                return `<option value="${v}" ${v === curType ? 'selected' : ''}>${label}</option>`;
+            }).join('');
+        }
+
+        function onManageFilterChange() {
+            const selCat = document.getElementById('manageFilterCategory');
+            const selType = document.getElementById('manageFilterType');
+            if (!selCat || !selType) return;
+
+            window.manageFilters = window.manageFilters || { category: 'all', type: 'all' };
+            window.manageFilters.category = selCat.value || 'all';
+            window.manageFilters.type = selType.value || 'all';
+            renderProductsTable();
+        }
+
+        function resetManageFilters() {
+            window.manageFilters = { category: 'all', type: 'all' };
+            renderManageFilters();
+            renderProductsTable();
+        }
+
+function setFilter(filterType, value) {
             currentFilters[filterType] = value;
             renderProducts();
             renderFilters();
@@ -2299,7 +2509,7 @@ if (productId) {
             }
             
             if (filtered.length === 0) {
-                grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📦</div><p>沒有符合條件的商品</p></div>';
+                grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📦</div><p>沒有符合條的商品</p></div>';
                 return;
             }
             
@@ -2311,9 +2521,9 @@ if (productId) {
                     <div class="product-info product-compact">
                         <div class="product-name">${product.name}</div>
                         <div class="product-meta">
-                            <div class="product-price">NT$ ${product.price}</div>
+                            <div class="product-price">NT$ ${product.price}</div>
                             <div class="product-stock ${product.stock <= 5 ? 'low' : ''}">
-                                庫存：${product.stock === 0 ? '已售完' : product.stock + ' 件'}
+                                庫存：${product.stock === 0 ? '完售' : product.stock + ' '}
                             </div>
                         </div>
                     </div>
@@ -2605,52 +2815,117 @@ saveData();
 
         // ========== 資料匯出/匯入 ==========
         function exportData() {
+            // 匯出：商品、交易、贈品設定、分類/類型清單（含排序）
             const data = {
-                products: products,
-                transactions: transactions,
-                giftSettings: giftSettings,
-                exportDate: new Date().toISOString()
+                version: "pos_export_v2",
+                exportDate: new Date().toISOString(),
+                products: products || [],
+                transactions: transactions || [],
+                giftSettings: giftSettings || {},
+                categoryOptions: categoryOptions || [],
+                typeOptions: typeOptions || []
             };
-            
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `pos-backup-${new Date().toISOString().split('T')[0]}.json`;
+            a.download = `doujin-pos-data-${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.json`;
+            document.body.appendChild(a);
             a.click();
+            document.body.removeChild(a);
             URL.revokeObjectURL(url);
-        }
+        };
 
-        function importData(event) {
+function importData(event) {
             const file = event.target.files[0];
             if (!file) return;
-            
+
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
                     const data = JSON.parse(e.target.result);
-                    
-                    if (confirm('匯入資料會覆蓋現有資料，確定要繼續嗎？')) {
-                        products = data.products || [];
-                        transactions = data.transactions || [];
-                        giftSettings = data.giftSettings || giftSettings;
-                        
-                        saveData();
-                        saveGiftSettings();
-                        
-                        init();
-                        alert('✅ 資料匯入成功！');
+
+                    if (!confirm('匯入資料會覆蓋現有資料，確定要繼續嗎？')) {
+                        event.target.value = '';
+                        return;
                     }
-                } catch (error) {
-                    alert('❌ 資料格式錯誤，無法匯入！');
+
+                    // 1) 先還原分類/類型（避免首頁篩選列消失）
+                    if (Array.isArray(data.categoryOptions)) {
+                        categoryOptions = data.categoryOptions.filter(Boolean);
+                    }
+                    if (Array.isArray(data.typeOptions)) {
+                        typeOptions = data.typeOptions.filter(Boolean);
+                    }
+                    // 舊版相容：可能用 categories/types 命名
+                    if (!Array.isArray(data.categoryOptions) && Array.isArray(data.categories)) {
+                        categoryOptions = data.categories.filter(Boolean);
+                    }
+                    if (!Array.isArray(data.typeOptions) && Array.isArray(data.types)) {
+                        typeOptions = data.types.filter(Boolean);
+                    }
+
+                    // 如果完全沒有，就保底一份（避免 UI 空白）
+                    if (!Array.isArray(categoryOptions) || categoryOptions.length === 0) {
+                        categoryOptions = ['BBX', '寶可夢', '崩鐵', '其他'];
+                    }
+                    if (!Array.isArray(typeOptions) || typeOptions.length === 0) {
+                        typeOptions = ['單售貼紙', '貼紙包', '壓克力吊飾', '壓克力立牌', '其他'];
+                    }
+
+                    saveCategoryTypeOptions();
+
+                    // 2) 還原商品/交易/贈品設定（並做資料修復）
+                    const rawProducts = Array.isArray(data.products) ? data.products : [];
+                    products = rawProducts.map(p => {
+                        const obj = (p && typeof p === 'object') ? p : {};
+
+                        // 欄位相容：若舊資料用別的鍵名，盡量補齊
+                        const name = obj.name ?? obj.title ?? '';
+                        const category = obj.category ?? obj.work ?? obj.series ?? obj.group ?? '';
+                        const type = obj.type ?? obj.kind ?? obj.subtype ?? obj.itemType ?? '';
+                        const price = Number.isFinite(Number(obj.price)) ? parseInt(obj.price) : 0;
+                        const cost = Number.isFinite(Number(obj.cost)) ? parseInt(obj.cost) : 0;
+                        const stock = Number.isFinite(Number(obj.stock)) ? parseInt(obj.stock) : 0;
+                        const isNew = !!(obj.isNew ?? obj.new ?? obj.is_new);
+                        const image = obj.image ?? obj.img ?? obj.imageUrl ?? obj.url ?? '';
+
+                        return {
+                            id: (obj.id ?? obj._id ?? Date.now().toString() + Math.random().toString(16).slice(2)),
+                            name: String(name || '').trim(),
+                            category: String(category || '').trim(),
+                            type: String(type || '').trim(),
+                            price: price,
+                            cost: cost,
+                            stock: stock,
+                            isNew: isNew,
+                            image: image || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23ddd" width="200" height="200"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em" font-size="18"%3E無圖片%3C/text%3E%3C/svg%3E'
+                        };
+                    });
+
+                    transactions = Array.isArray(data.transactions) ? data.transactions : [];
+                    giftSettings = (data.giftSettings && typeof data.giftSettings === 'object') ? data.giftSettings : giftSettings;
+
+                    saveData();
+                    saveGiftSettings();
+
+                    // 3) 重建畫面（不要因為暫存狀態導致首頁空白）
+                    //    init() 會 loadData()/loadCategoryTypeOptions()，因此要確保剛才已 save*
+                    init();
+
+                    alert('匯入完成！');
+                } catch (err) {
+                    console.error(err);
+                    alert('匯入失敗：檔案格式不正確');
+                } finally {
+                    event.target.value = '';
                 }
-            };
+            }
             reader.readAsText(file);
-            
-            event.target.value = '';
         }
 
-        function clearAllData() {
+function clearAllData() {
             if (confirm('⚠️ 警告：這會清除所有商品、交易記錄等資料，且無法復原！\n\n確定要繼續嗎？')) {
                 if (confirm('再次確認：真的要清除所有資料嗎？')) {
                     localStorage.clear();
